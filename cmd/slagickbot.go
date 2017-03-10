@@ -128,7 +128,7 @@ func getCardOutput(db *sql.DB, name string) (slack.PostMessageParameters, error)
 		number,
 		multiverseid,
 		set_code
-	FROM cards WHERE lower(name) LIKE $1 ORDER BY set_release_date DESC LIMIT 1
+	FROM cards WHERE LOWER(name) LIKE LOWER($1) ORDER BY set_release_date DESC LIMIT 1
 	`, name).Scan(
 		&card.Name,
 		&card.ManaCost,
