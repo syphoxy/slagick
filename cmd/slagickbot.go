@@ -198,8 +198,8 @@ func main() {
 	go rtm.ManageConnection()
 
 	botID := ""
+	botAdminID := os.Getenv("SLAGICK_BOT_ADMIN")
 
-	// TODO error checking
 	db, err := sql.Open("postgres", "user=postgres dbname=postgres host=localhost port=5432 sslmode=disable")
 	if err != nil {
 		fmt.Println(err.Error())
@@ -226,12 +226,14 @@ func main() {
 			commandLength := len(commandArgs)
 
 			if commandLength == 1 {
-				if commandArgs[0] == "disconnect" || commandArgs[0] == "leave" {
-					rtm.SendMessage(rtm.NewOutgoingMessage("Bye!", ev.Msg.Channel))
-				}
-				if commandArgs[0] == "generate" {
-					setupTables(db)
-					bootstrapTables(db)
+				if ev.User == botAdminID {
+					if commandArgs[0] == "disconnect" || commandArgs[0] == "leave" {
+						rtm.SendMessage(rtm.NewOutgoingMessage("Bye!", ev.Msg.Channel))
+					}
+					if commandArgs[0] == "generate" {
+						setupTables(db)
+						bootstrapTables(db)
+					}
 				}
 			}
 
@@ -248,12 +250,14 @@ func main() {
 			}
 
 			if commandLength == 1 {
-				if commandArgs[0] == "leave" {
-					api.LeaveChannel(ev.Msg.Channel)
-				}
-				if commandArgs[0] == "disconnect" {
-					rtm.Disconnect()
-					os.Exit(0)
+				if ev.User == botAdminID {
+					if commandArgs[0] == "leave" {
+						api.LeaveChannel(ev.Msg.Channel)
+					}
+					if commandArgs[0] == "disconnect" {
+						rtm.Disconnect()
+						os.Exit(0)
+					}
 				}
 			}
 		}
