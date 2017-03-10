@@ -22,12 +22,14 @@ type SetS struct {
 }
 
 type CardS struct {
-	Name      string  `json:"name"`
-	ManaCost  string  `json:"manaCost"`
-	Cmc       float64 `json:"cmc"`
-	Type      string  `json:"type"`
-	Text      string  `json:"text"`
-	Power     string  `json:"power"`
-	Toughness string  `json:"toughness"`
-	Number    string  `json:"number"`
+	Name         string  `json:"name"`
+	ManaCost     string  `json:"manaCost"`
+	Cmc          float64 `json:"cmc"`
+	Type         string  `json:"type"`
+	Text         string  `json:"text"`
+	Flavor       string  `json:"flavor"`
+	Power        string  `json:"power"`
+	Toughness    string  `json:"toughness"`
+	Number       string  `json:"number"`
+	MultiverseID int     `json:"multiverseid"`
 }
