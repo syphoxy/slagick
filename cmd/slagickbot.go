@@ -19,7 +19,7 @@ func setupTables(db *sql.DB) {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	db.Query(`
+	_, err := db.Query(`
 	CREATE TABLE cards (
 		id                SERIAL PRIMARY KEY,
 		name              VARCHAR(255),
