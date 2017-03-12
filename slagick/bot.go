@@ -13,11 +13,14 @@ type Bot struct {
 }
 
 func (b Bot) LoadCardByName(name string) (CardS, error) {
+	b.DB.Exec("CREATE EXTENSION fuzzystrmatch")
+	b.DB.Exec("CREATE EXTENSION pg_trgm")
+
 	query := strings.Join([]string{
 		"SELECT name, mana_cost, cmc, type, text, flavor, power, toughness, number, multiverseid",
 		"FROM cards",
-		"WHERE LOWER(name) LIKE LOWER($1)",
-		"ORDER BY set_release_date DESC",
+		"WHERE lower(name) % lower($1)",
+		"ORDER BY levenshtein(lower(name), lower($1)) ASC, set_release_date DESC",
 		"LIMIT 1",
 	}, " ")
 

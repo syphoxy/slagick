@@ -55,6 +55,9 @@ func main() {
 				if err != nil {
 					msg = err.Error()
 				} else {
+					if strings.ToLower(card.Name) != strings.ToLower(name) {
+						msg = "Sorry, I didn't find that card. Is this what you were looking for?"
+					}
 					params.Attachments = []slack.Attachment{
 						slack.Attachment{
 							Title:      card.Name,
