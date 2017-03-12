@@ -53,10 +53,15 @@ func main() {
 
 				card, err := bot.LoadCardByName(name)
 				if err != nil {
-					msg = err.Error()
+					if err == sql.ErrNoRows {
+						msg = "Sorry, I can't find that card."
+					} else {
+						api.PostMessage(bot.Admin, "I tried satisfying _'"+fullCommand+"'_ but I received this error: ```\n"+err.Error()+"\n```", params)
+						msg = "An unknown error occured. I've notified my administrator."
+					}
 				} else {
 					if strings.ToLower(card.Name) != strings.ToLower(name) {
-						msg = "Sorry, I didn't find that card. Is this what you were looking for?"
+						msg = "Sorry, I can't find that card. Is this what you were looking for?"
 					}
 					params.Attachments = []slack.Attachment{
 						slack.Attachment{
@@ -79,7 +84,6 @@ func main() {
 			}
 
 			if timeout > int32(time.Now().Unix()) {
-				// https://api.slack.com/methods/im.mark
 				api.MarkIMChannel(ev.Msg.Channel, ev.Msg.Timestamp)
 				timeout = int32(time.Now().Unix()) + 5
 			}
