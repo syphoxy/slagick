@@ -6,12 +6,22 @@ import (
 	"net/http"
 )
 
-func (b Bot) createTables() error {
+const (
+	versionURL = "https://mtgjson.com/json/version.json"
+	dataURL    = "https://mtgjson.com/json/AllSetsArray-x.json"
+)
+
+func (b Bot) setupDB() error {
 	_, err := b.DB.Query(`
+	CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
+
+	CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 	CREATE TABLE IF NOT EXISTS version (
 		name              VARCHAR(255),
 		value             VARCHAR(255)
-	)
+	);
+
 	CREATE TABLE IF NOT EXISTS cards (
 		id                SERIAL PRIMARY KEY,
 		name              VARCHAR(255),
@@ -30,14 +40,17 @@ func (b Bot) createTables() error {
 	return err
 }
 
-func (b Bot) populateTables() error {
+func (b Bot) UpdateDB(force bool) error {
 	var sets []SetS
 	theirVersion := ""
 	ourVersion := ""
 
-	b.createTables()
+	err := b.setupDB()
+	if err != nil {
+		return err
+	}
 
-	resp, err := http.Get("https://mtgjson.com/json/version.json")
+	resp, err := http.Get(versionURL)
 	if err != nil {
 		return err
 	}
@@ -51,7 +64,7 @@ func (b Bot) populateTables() error {
 	err = b.DB.QueryRow("SELECT value FROM version WHERE name = $1", "version").Scan(&ourVersion)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			_, err = b.DB.Exec("INSERT INTO version (name, value) VALUES ($1, $2);", "version", theirVersion)
+			_, err = b.DB.Exec("INSERT INTO version (name, value) VALUES ($1, $2)", "version", theirVersion)
 			if err != nil {
 				return err
 			}
@@ -60,22 +73,27 @@ func (b Bot) populateTables() error {
 		}
 	}
 
-	if theirVersion == ourVersion {
+	if !force && theirVersion == ourVersion {
 		return nil
 	}
 
-	_, err = b.DB.Exec("UPDATE version SET value = $2 WHERE name = $1 LIMIT 1", "version", theirVersion)
+	_, err = b.DB.Exec("UPDATE version SET value = $2 WHERE name = $1", "version", theirVersion)
 	if err != nil {
 		return err
 	}
 
-	resp, err = http.Get("https://mtgjson.com/json/AllSetsArray-x.json")
+	resp, err = http.Get(dataURL)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
 	err = json.NewDecoder(resp.Body).Decode(&sets)
+	if err != nil {
+		return err
+	}
+
+	_, err = b.DB.Exec("TRUNCATE cards RESTART IDENTITY")
 	if err != nil {
 		return err
 	}
@@ -126,4 +144,31 @@ func (b Bot) populateTables() error {
 		tx.Commit()
 	}
 	return nil
+}
+
+func (b Bot) LoadCardByName(name string) (CardS, error) {
+	query := "SELECT name, mana_cost, cmc, type, text, flavor, power, toughness, number, multiverseid"
+	query += " FROM cards"
+	query += " WHERE lower(name) % lower($1)"
+	query += " ORDER BY levenshtein(lower(name), lower($1)) ASC, set_release_date DESC"
+	query += " LIMIT 1"
+
+	var card CardS
+	err := b.DB.QueryRow(query, name).Scan(
+		&card.Name,
+		&card.ManaCost,
+		&card.Cmc,
+		&card.Type,
+		&card.Text,
+		&card.Flavor,
+		&card.Power,
+		&card.Toughness,
+		&card.Number,
+		&card.MultiverseID)
+
+	if err != nil {
+		return card, err
+	}
+
+	return card, nil
 }

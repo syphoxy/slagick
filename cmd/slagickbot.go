@@ -77,9 +77,19 @@ func main() {
 			}
 
 			if ev.User == bot.Admin {
-				if strings.HasPrefix(fullCommand, "populate") {
+				if strings.HasPrefix(fullCommand, "update") {
 					params := slack.PostMessageParameters{}
-					api.PostMessage(ev.Msg.Channel, "Populating!", params)
+					force := false
+					msg := "Updated!"
+					if len(commandArgs) > 1 && commandArgs[1] == "force" {
+						force = true
+					}
+					err := bot.UpdateDB(force)
+					if err != nil {
+						api.PostMessage(bot.Admin, "I tried satisfying _'"+fullCommand+"'_ but I received this error: ```\n"+err.Error()+"\n```", params)
+						msg = "An unknown error occured. I've notified my administrator."
+					}
+					api.PostMessage(ev.Msg.Channel, msg, params)
 				}
 			}
 
