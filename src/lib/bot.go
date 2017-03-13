@@ -7,7 +7,6 @@ import (
 )
 
 type Bot struct {
-	Me        string
 	Admin     string
 	DB        *sql.DB
 	Token     string

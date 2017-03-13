@@ -30,11 +30,8 @@ func main() {
 
 	for msg := range rtm.IncomingEvents {
 		switch ev := msg.Data.(type) {
-		case *slack.ConnectedEvent:
-			bot.Me = ev.Info.User.ID
-
 		case *slack.MessageEvent:
-			if ev.User == bot.Me {
+			if ev.User == "" {
 				continue
 			}
 
