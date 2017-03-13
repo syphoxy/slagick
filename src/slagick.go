@@ -71,7 +71,7 @@ func main() {
 				api.PostMessage(ev.Msg.Channel, msg, params)
 			}
 
-			if strings.HasPrefix(fullCommand, "update") {
+			if strings.HasPrefix(fullCommand, "%update") {
 				ignore := false
 				msg := "Updated!"
 				if len(commandArgs) == 3 && commandArgs[1] == "ignore" && commandArgs[2] == "cache" && ev.User == bot.Admin {
