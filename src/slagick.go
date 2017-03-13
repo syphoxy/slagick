@@ -1,7 +1,7 @@
 package main
 
 import (
-	"../slagick"
+	slagick "./lib"
 	"database/sql"
 	_ "github.com/lib/pq"
 	"github.com/nlopes/slack"
@@ -21,12 +21,10 @@ func main() {
 	timeout := int32(time.Now().Unix()) + 5
 
 	bot := slagick.Bot{
-		Admin: os.Getenv("SLAGICK_BOT_ADMIN"),
-		Token: os.Getenv("SLAGICKBOT_TOKEN"),
-		DB:    db,
+		DB: db,
 	}
 
-	api := slack.New(os.Getenv("SLAGICKBOT_TOKEN"))
+	api := slack.New(os.Getenv("SLAGICK_TOKEN"))
 	rtm := api.NewRTM()
 	go rtm.ManageConnection()
 
@@ -42,26 +40,26 @@ func main() {
 
 			fullCommand := strings.ToLower(ev.Msg.Text)
 			commandArgs := strings.Fields(ev.Msg.Text)
+			params := slack.PostMessageParameters{
+				Username:  "Slagick",
+				IconEmoji: ":flower_playing_cards:",
+			}
 
 			if strings.HasPrefix(fullCommand, "show me") {
 				msg := ""
 				name := strings.Join(commandArgs[2:], " ")
-				params := slack.PostMessageParameters{
-					Username:  "Slagick",
-					IconEmoji: ":flower_playing_cards:",
-				}
 
 				card, err := bot.LoadCardByName(name)
 				if err != nil {
 					if err == sql.ErrNoRows {
-						msg = "Sorry, I can't find that card."
+						msg = "Sorry, I can't find that card. :disappointed:"
 					} else {
 						api.PostMessage(bot.Admin, "I tried satisfying _'"+fullCommand+"'_ but I received this error: ```\n"+err.Error()+"\n```", params)
-						msg = "An unknown error occured. I've notified my administrator."
+						msg = "An unknown error occured. I've notified my administrator. :cry:"
 					}
 				} else {
 					if strings.ToLower(card.Name) != strings.ToLower(name) {
-						msg = "Sorry, I can't find that card. Is this what you were looking for?"
+						msg = "Sorry, I can't find that card. Is this what you were looking for? :information_desk_person:"
 					}
 					params.Attachments = []slack.Attachment{
 						slack.Attachment{
@@ -76,20 +74,29 @@ func main() {
 				api.PostMessage(ev.Msg.Channel, msg, params)
 			}
 
-			if ev.User == bot.Admin {
-				if strings.HasPrefix(fullCommand, "update") {
-					params := slack.PostMessageParameters{}
-					force := false
-					msg := "Updated!"
-					if len(commandArgs) > 1 && commandArgs[1] == "force" {
-						force = true
-					}
-					err := bot.UpdateDB(force)
-					if err != nil {
-						api.PostMessage(bot.Admin, "I tried satisfying _'"+fullCommand+"'_ but I received this error: ```\n"+err.Error()+"\n```", params)
-						msg = "An unknown error occured. I've notified my administrator."
-					}
-					api.PostMessage(ev.Msg.Channel, msg, params)
+			if strings.HasPrefix(fullCommand, "update") {
+				ignore := false
+				msg := "Updated!"
+				if len(commandArgs) == 3 && commandArgs[1] == "ignore" && commandArgs[2] == "cache" && ev.User == bot.Admin {
+					ignore = true
+				}
+				err := bot.UpdateDB(ignore)
+				if err != nil {
+					api.PostMessage(bot.Admin, "I tried satisfying _'"+fullCommand+"'_ but I received this error: ```\n"+err.Error()+"\n```", params)
+					msg = "An unknown error occured. I've notified my administrator. :cry:"
+				}
+				api.PostMessage(ev.Msg.Channel, msg, params)
+			}
+
+			if bot.Admin == "" {
+				if bot.AuthToken == "" && strings.HasPrefix(fullCommand, "authorize me") {
+					bot.AuthToken = bot.GenerateAuthToken()
+					log.Println("Please use the command: authorize my token " + bot.AuthToken)
+					api.PostMessage(ev.Msg.Channel, "Please check bot's output for the next step. :page_with_curl: :eyes:", params)
+				}
+				if bot.AuthToken != "" && strings.HasPrefix(fullCommand, "authorize my token") && len(commandArgs) > 3 && bot.AuthToken == commandArgs[3] {
+					bot.Admin = ev.User
+					api.PostMessage(ev.Msg.Channel, "You have been authorized! :tada:", params)
 				}
 			}
 

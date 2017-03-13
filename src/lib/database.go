@@ -40,7 +40,7 @@ func (b Bot) setupDB() error {
 	return err
 }
 
-func (b Bot) UpdateDB(force bool) error {
+func (b Bot) UpdateDB(ignore bool) error {
 	var sets []SetS
 	theirVersion := ""
 	ourVersion := ""
@@ -73,7 +73,7 @@ func (b Bot) UpdateDB(force bool) error {
 		}
 	}
 
-	if !force && theirVersion == ourVersion {
+	if !ignore && theirVersion == ourVersion {
 		return nil
 	}
 
