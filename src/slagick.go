@@ -71,6 +71,10 @@ func main() {
 				api.PostMessage(ev.Msg.Channel, msg, params)
 			}
 
+			if strings.HasPrefix(fullCommand, "%ping") {
+				api.PostMessage(ev.Msg.Channel, "pong", params)
+			}
+
 			if strings.HasPrefix(fullCommand, "%update") {
 				ignore := false
 				msg := "Updated!"
