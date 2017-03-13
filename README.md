@@ -48,4 +48,20 @@ You can install this binary anywhere accessible by your `$PATH` and run it like 
 Or you can call it within the directory you built it in like this:
 
     $ ./slagick
-    
+
+### Docker
+
+This project is Docker ready. You can just use this:
+
+    $ export SLAGICK_TOKEN="..."
+    $ docker-compose up -d
+
+It should take you from start to finish.
+
+#### Troubleshooting
+
+On some systems, you can't access the Docker daemon without extra privileges. Use this:
+
+    $ sudo -E docker-compose up -d
+
+The `-E` flag is required because `sudo` will forget what environment variables you had.

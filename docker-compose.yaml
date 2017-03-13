@@ -1,6 +1,13 @@
 version: '2'
 
 services:
+  bot:
+    image: slagick:latest
+    build: .
+    environment:
+    - SLAGICK_TOKEN
+    links:
+    - db
   db:
     image: 'postgres:9.6.2'
     ports:
