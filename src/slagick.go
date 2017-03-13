@@ -42,8 +42,11 @@ func main() {
 				IconEmoji: ":flower_playing_cards:",
 			}
 
-			if strings.HasPrefix(fullCommand, "show me") {
+			if (strings.HasPrefix(fullCommand, "show me") || strings.HasPrefix(fullCommand, "shoe me")) && len(commandArgs) > 2 {
 				msg := ""
+				if strings.HasPrefix(fullCommand, "shoe me") {
+					msg = "Here you go! :athletic_shoe:"
+				}
 				name := strings.Join(commandArgs[2:], " ")
 
 				card, err := bot.LoadCardByName(name)
