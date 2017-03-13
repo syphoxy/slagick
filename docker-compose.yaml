@@ -5,7 +5,7 @@ services:
     image: slagick:latest
     build: .
     environment:
-    - SLAGICK_TOKEN
+    - SLAGICK_API_TOKEN
     links:
     - db
   db:

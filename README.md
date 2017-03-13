@@ -33,11 +33,11 @@ You can say `update` or `update ignore cache` to trigger a database update. You 
 Before running it, you will also need to set your Slack bot API token as an environment variable.
 You can put this in your `~/.bash_profile`, `~/.bashrc`, or `~/.zshrc` or just run it before executing the bot:
 
-    $ export SLAGICK_TOKEN="..."
+    $ export SLAGICK_API_TOKEN='...'
 
 Optionally, you can do this to avoid cluttering your environment:
 
-    $ env SLAGICK_TOKEN="..." path/to/slagick
+    $ env SLAGICK_API_TOKEN='...' path/to/slagick
 
 ### Running it
 
@@ -53,7 +53,7 @@ Or you can call it within the directory you built it in like this:
 
 This project is Docker ready. You can just use this:
 
-    $ export SLAGICK_TOKEN="..."
+    $ export SLAGICK_API_TOKEN='...'
     $ docker-compose up -d
 
 It should take you from start to finish.

@@ -24,7 +24,7 @@ func main() {
 		DB: db,
 	}
 
-	api := slack.New(os.Getenv("SLAGICK_TOKEN"))
+	api := slack.New(os.Getenv("SLAGICK_API_TOKEN"))
 	rtm := api.NewRTM()
 	go rtm.ManageConnection()
 
