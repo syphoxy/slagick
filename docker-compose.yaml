@@ -6,6 +6,7 @@ services:
     build: .
     environment:
     - SLAGICK_API_TOKEN
+    - SLAGICK_DB_CONFIG
     links:
     - db
   db:

@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	db, err := sql.Open("postgres", "user=postgres dbname=postgres host=localhost port=5432 sslmode=disable")
+	db, err := sql.Open("postgres", os.Getenv("SLAGICK_DB_CONFIG"))
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -35,9 +35,14 @@ You can put this in your `~/.bash_profile`, `~/.bashrc`, or `~/.zshrc` or just r
 
     $ export SLAGICK_API_TOKEN='...'
 
+You will also need to configure the database connection and set it to the `SLAGICK_DB_CONFIG` variable.
+Please see [this](https://godoc.org/github.com/lib/pq) as a reference. Example:
+
+    $ export SLAGICK_DB_CONFIG='user=postgres dbname=postgres host=localhost port=5432 sslmode=disable'
+
 Optionally, you can do this to avoid cluttering your environment:
 
-    $ env SLAGICK_API_TOKEN='...' path/to/slagick
+    $ env SLAGICK_API_TOKEN='...' SLAGICK_DB_CONFIG='...' path/to/slagick
 
 ### Running it
 
@@ -54,6 +59,7 @@ Or you can call it within the directory you built it in like this:
 This project is Docker ready. You can just use this:
 
     $ export SLAGICK_API_TOKEN='...'
+    $ export SLAGICK_DB_CONFIG='...'
     $ docker-compose up -d
 
 It should take you from start to finish.
