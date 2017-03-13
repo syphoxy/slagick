@@ -49,7 +49,7 @@ Or you can call it within the directory you built it in like this:
 
     $ ./slagick
 
-### Docker
+## Docker
 
 This project is Docker ready. You can just use this:
 
@@ -58,7 +58,7 @@ This project is Docker ready. You can just use this:
 
 It should take you from start to finish.
 
-#### Troubleshooting
+### Troubleshooting
 
 On some systems, you can't access the Docker daemon without extra privileges. Use this:
 
