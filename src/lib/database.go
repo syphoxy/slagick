@@ -149,7 +149,7 @@ func (b Bot) UpdateDB(ignore bool) error {
 func (b Bot) LoadCardByName(name string) (CardS, error) {
 	query := "SELECT name, mana_cost, cmc, type, text, flavor, power, toughness, number, multiverseid"
 	query += " FROM cards"
-	query += " WHERE lower(name) % lower($1)"
+	query += " WHERE lower(name) % lower($1) AND multiverseid != 0"
 	query += " ORDER BY levenshtein(lower(name), lower($1)) ASC, set_release_date DESC"
 	query += " LIMIT 1"
 
