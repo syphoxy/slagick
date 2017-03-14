@@ -22,7 +22,7 @@ func parseBrackets(s string, offset int) (string, int) {
 	return s, offset + start + end
 }
 
-func parseCardMentions(input string) ([]string, int) {
+func parseCardMentions(input string) []string {
 	count := 0
 	start_count := strings.Count(input, "[")
 	end_count := strings.Count(input, "]")
@@ -43,7 +43,7 @@ func parseCardMentions(input string) ([]string, int) {
 			names = append(names, name)
 		}
 	}
-	return names, len(names)
+	return names
 }
 
 const (
@@ -122,36 +122,41 @@ func main() {
 			}
 
 			if strings.ContainsAny(ev.Msg.Text, "[]") {
-				names, count := parseCardMentions(ev.Msg.Text)
-				params.Attachments = make([]slack.Attachment, 0, count)
-			OUTER:
-				for _, name := range names {
-					card, err := bot.LoadCardByName(name)
-					for _, a := range params.Attachments {
-						if a.Title == card.Name {
-							count--
-							continue OUTER
+				names := parseCardMentions(ev.Msg.Text)
+				count := len(names)
+				if count > 0 {
+					params.Attachments = make([]slack.Attachment, 0, count)
+				CARDS:
+					for _, name := range names {
+						card, err := bot.LoadCardByName(name)
+						for _, a := range params.Attachments {
+							if a.Title == card.Name {
+								count--
+								continue CARDS
+							}
+						}
+						if err == nil {
+							params.Attachments = append(params.Attachments, slack.Attachment{
+								Title:      card.Name,
+								TitleLink:  card.GathererCardPageURL(),
+								Text:       card.RenderSlackMsg(),
+								ImageURL:   card.GathererCardImageURL(),
+								MarkdownIn: []string{"text"},
+							})
+						} else if err != sql.ErrNoRows {
+							api.PostMessage(ev.Msg.Channel, fmt.Sprintf(ERROR_REPORT, "["+name+"]", err.Error()), params)
 						}
 					}
-					if err == nil {
-						params.Attachments = append(params.Attachments, slack.Attachment{
-							Title:      card.Name,
-							TitleLink:  card.GathererCardPageURL(),
-							Text:       card.RenderSlackMsg(),
-							ImageURL:   card.GathererCardImageURL(),
-							MarkdownIn: []string{"text"},
-						})
-					} else if err != sql.ErrNoRows {
-						api.PostMessage(ev.Msg.Channel, fmt.Sprintf(ERROR_REPORT, "["+name+"]", err.Error()), params)
+					msg := ALL_MENTIONED
+					if count > 0 {
+						if len(params.Attachments) < count {
+							msg = SOME_MENTIONED
+						} else {
+							msg = NONE_MENTIONED
+						}
 					}
+					api.PostMessage(ev.Msg.Channel, msg, params)
 				}
-				msg := ALL_MENTIONED
-				if len(params.Attachments) == 0 {
-					msg = NONE_MENTIONED
-				} else if len(params.Attachments) < count {
-					msg = SOME_MENTIONED
-				}
-				api.PostMessage(ev.Msg.Channel, msg, params)
 			}
 
 			if strings.HasPrefix(fullCommand, "slagick ping") {
