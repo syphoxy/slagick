@@ -153,14 +153,14 @@ func main() {
 				api.PostMessage(ev.Msg.Channel, msg, params)
 			}
 
-			if strings.HasPrefix(fullCommand, "%ping") {
+			if strings.HasPrefix(fullCommand, "slagick ping") {
 				api.PostMessage(ev.Msg.Channel, "pong", params)
 			}
 
-			if strings.HasPrefix(fullCommand, "%update") {
+			if strings.HasPrefix(fullCommand, "slagick update") {
 				ignore := false
 				msg := "Updated!"
-				if strings.HasPrefix(fullCommand, "%update ignore cache") && ev.User == bot.Admin {
+				if strings.HasPrefix(fullCommand, "slagick update ignore cache") && ev.User == bot.Admin {
 					ignore = true
 				}
 				err := bot.UpdateDB(ignore)
@@ -172,12 +172,12 @@ func main() {
 			}
 
 			if bot.Admin == "" {
-				if bot.AuthToken == "" && strings.HasPrefix(fullCommand, "authorize me") {
+				if bot.AuthToken == "" && strings.HasPrefix(fullCommand, "slagick authorize me") {
 					bot.AuthToken = bot.GenerateAuthToken()
-					log.Println("Please use the command: authorize my token " + bot.AuthToken)
+					log.Println("Please use the command: slagick authorize my token " + bot.AuthToken)
 					api.PostMessage(ev.Msg.Channel, CHECK_BOT_OUTPUT, params)
 				}
-				if bot.AuthToken != "" && strings.HasPrefix(fullCommand, "authorize my token") && len(commandArgs) > 3 && bot.AuthToken == commandArgs[3] {
+				if bot.AuthToken != "" && strings.HasPrefix(fullCommand, "slagick authorize my token") && len(commandArgs) > 4 && bot.AuthToken == commandArgs[4] {
 					bot.Admin = ev.User
 					api.PostMessage(ev.Msg.Channel, AUTHORIZED_TADA, params)
 				}

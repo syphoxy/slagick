@@ -12,13 +12,13 @@ You can say `show me Card Name` where _Card Name_ is the card that you want to s
 
 It has fuzzy searching capabilities so if you're looking for "Ad Nauseum" it will still match "Ad Nauseam."
 
-You can say `authorize me` to instruct the bot to attempt to authorize you as an administrator. Only one user can be an administrator at once for the time being. In order to authorize a different user, please restart the bot.
+You can say `slagick authorize me` to instruct the bot to attempt to authorize you as an administrator. Only one user can be an administrator at once for the time being. In order to authorize a different user, please restart the bot.
 
 ![authorize me example](docs/authorize_me.png "authorize me example")
 
-You can say `%update` or `%update ignore cache` to trigger a database update. You should run this at least once the first time you set the bot up. The `ignore cache` version of this command can only be run by an administrator. It bypasses cache by ignoring database version checks.
+You can say `slagick update` or `slagick update ignore cache` to trigger a database update. You should run this at least once the first time you set the bot up. The `ignore cache` version of this command can only be run by an administrator. It bypasses cache by ignoring database version checks.
 
-You can say `%ping` to have the bot respond with "pong." That's all it does.
+You can say `slagick ping` to have the bot respond with "pong." That's all it does.
 
 ## How do I use it?
 
