@@ -3,12 +3,52 @@ package main
 import (
 	slagick "./lib"
 	"database/sql"
+	"fmt"
 	_ "github.com/lib/pq"
 	"github.com/nlopes/slack"
 	"log"
 	"os"
 	"strings"
 	"time"
+)
+
+func parseBrackets(input string, offset int) (string, int) {
+	start := strings.Index(input[offset:], "[")
+	end := strings.Index(input[offset+start:], "]")
+	return input[offset+start+1 : offset+start+end], offset + start + end
+}
+
+func parseCardMentions(input string) ([]string, int) {
+	count := 0
+	start_count := strings.Count(input, "[")
+	end_count := strings.Count(input, "]")
+
+	if start_count <= end_count {
+		count = start_count
+	} else {
+		count = end_count
+	}
+
+	names := make([]string, count)
+
+	offset := 0
+	for i := 0; i < count; i++ {
+		var name string
+		name, offset = parseBrackets(input, offset)
+		names[i] = name
+	}
+	return names, count
+}
+
+const (
+	SHOE_ME_EASTER_EGG = "Here you go! :athletic_shoe:"
+	NOT_FOUND          = "Sorry, I can't find that card. :disappointed:"
+	FOUND_FUZZY        = "Sorry, I can't find that card. Is this what you were looking for? :information_desk_person:"
+	UNKNOWN_ERROR      = "An unknown error occured. I've notified my administrator. :cry:"
+	ERROR_REPORT       = "I tried satisfying _'%s'_ but I received this error: ```\n%s\n```"
+	ALL_MENTIONED      = "These cards were mentioned. :information_desk_person:"
+	SOME_MENTIONED     = "I found some of the cards mentioned. :sweat:"
+	NONE_MENTIONED     = "I found none of the cards mentioned. :disappointed:"
 )
 
 func main() {
@@ -45,21 +85,20 @@ func main() {
 			if (strings.HasPrefix(fullCommand, "show me") || strings.HasPrefix(fullCommand, "shoe me")) && len(commandArgs) > 2 {
 				msg := ""
 				if strings.HasPrefix(fullCommand, "shoe me") {
-					msg = "Here you go! :athletic_shoe:"
+					msg = SHOE_ME_EASTER_EGG
 				}
 				name := strings.Join(commandArgs[2:], " ")
-
 				card, err := bot.LoadCardByName(name)
 				if err != nil {
 					if err == sql.ErrNoRows {
-						msg = "Sorry, I can't find that card. :disappointed:"
+						msg = NOT_FOUND
 					} else {
-						api.PostMessage(bot.Admin, "I tried satisfying _'"+fullCommand+"'_ but I received this error: ```\n"+err.Error()+"\n```", params)
-						msg = "An unknown error occured. I've notified my administrator. :cry:"
+						api.PostMessage(bot.Admin, fmt.Sprintf(ERROR_REPORT, fullCommand, err.Error()), params)
+						msg = UNKNOWN_ERROR
 					}
 				} else {
 					if strings.ToLower(card.Name) != strings.ToLower(name) {
-						msg = "Sorry, I can't find that card. Is this what you were looking for? :information_desk_person:"
+						msg = FOUND_FUZZY
 					}
 					params.Attachments = []slack.Attachment{
 						slack.Attachment{
@@ -74,6 +113,32 @@ func main() {
 				api.PostMessage(ev.Msg.Channel, msg, params)
 			}
 
+			if strings.ContainsAny(ev.Msg.Text, "[]") {
+				names, count := parseCardMentions(ev.Msg.Text)
+				params.Attachments = make([]slack.Attachment, 0, count)
+				for _, name := range names {
+					card, err := bot.LoadCardByName(name)
+					if err == nil {
+						params.Attachments = append(params.Attachments, slack.Attachment{
+							Title:      card.Name,
+							TitleLink:  card.GathererCardPageURL(),
+							Text:       card.RenderSlackMsg(),
+							ImageURL:   card.GathererCardImageURL(),
+							MarkdownIn: []string{"text"},
+						})
+					} else if err != sql.ErrNoRows {
+						api.PostMessage(ev.Msg.Channel, fmt.Sprintf(ERROR_REPORT, "mentioned ["+name+"]", err.Error()), params)
+					}
+				}
+				msg := ALL_MENTIONED
+				if len(params.Attachments) == 0 {
+					msg = NONE_MENTIONED
+				} else if count != len(params.Attachments) {
+					msg = SOME_MENTIONED
+				}
+				api.PostMessage(ev.Msg.Channel, msg, params)
+			}
+
 			if strings.HasPrefix(fullCommand, "%ping") {
 				api.PostMessage(ev.Msg.Channel, "pong", params)
 			}
@@ -81,7 +146,7 @@ func main() {
 			if strings.HasPrefix(fullCommand, "%update") {
 				ignore := false
 				msg := "Updated!"
-				if len(commandArgs) == 3 && commandArgs[1] == "ignore" && commandArgs[2] == "cache" && ev.User == bot.Admin {
+				if strings.HasPrefix(fullCommand, "%update ignore cache") && ev.User == bot.Admin {
 					ignore = true
 				}
 				err := bot.UpdateDB(ignore)
