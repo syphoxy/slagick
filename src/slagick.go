@@ -54,6 +54,8 @@ const (
 	ALL_MENTIONED      = "These cards were mentioned. :information_desk_person:"
 	SOME_MENTIONED     = "I found some of the cards mentioned. :sweat:"
 	NONE_MENTIONED     = "I found none of the cards mentioned. :disappointed:"
+	AUTHORIZED_TADA    = "You have been authorized! :tada:"
+	CHECK_BOT_OUTPUT   = "Please check bot's output for the next step. :page_with_curl: :eyes:"
 )
 
 func main() {
@@ -163,8 +165,8 @@ func main() {
 				}
 				err := bot.UpdateDB(ignore)
 				if err != nil {
-					api.PostMessage(bot.Admin, "I tried satisfying _'"+fullCommand+"'_ but I received this error: ```\n"+err.Error()+"\n```", params)
-					msg = "An unknown error occured. I've notified my administrator. :cry:"
+					api.PostMessage(bot.Admin, fmt.Sprintf(ERROR_REPORT, fullCommand, err.Error()), params)
+					msg = UNKNOWN_ERROR
 				}
 				api.PostMessage(ev.Msg.Channel, msg, params)
 			}
@@ -173,11 +175,11 @@ func main() {
 				if bot.AuthToken == "" && strings.HasPrefix(fullCommand, "authorize me") {
 					bot.AuthToken = bot.GenerateAuthToken()
 					log.Println("Please use the command: authorize my token " + bot.AuthToken)
-					api.PostMessage(ev.Msg.Channel, "Please check bot's output for the next step. :page_with_curl: :eyes:", params)
+					api.PostMessage(ev.Msg.Channel, CHECK_BOT_OUTPUT, params)
 				}
 				if bot.AuthToken != "" && strings.HasPrefix(fullCommand, "authorize my token") && len(commandArgs) > 3 && bot.AuthToken == commandArgs[3] {
 					bot.Admin = ev.User
-					api.PostMessage(ev.Msg.Channel, "You have been authorized! :tada:", params)
+					api.PostMessage(ev.Msg.Channel, AUTHORIZED_TADA, params)
 				}
 			}
 
