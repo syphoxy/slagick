@@ -147,9 +147,11 @@ func main() {
 							api.PostMessage(ev.Msg.Channel, fmt.Sprintf(ERROR_REPORT, "["+name+"]", err.Error()), params)
 						}
 					}
-					msg := ALL_MENTIONED
+					msg := ""
 					if count > 0 {
-						if len(params.Attachments) < count {
+						if len(params.Attachments) == count {
+							msg = ALL_MENTIONED
+						} else if len(params.Attachments) < count {
 							msg = SOME_MENTIONED
 						} else {
 							msg = NONE_MENTIONED
