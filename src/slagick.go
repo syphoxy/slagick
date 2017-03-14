@@ -15,6 +15,9 @@ import (
 func parseBrackets(input string, offset int) (string, int) {
 	start := strings.Index(input[offset:], "[")
 	end := strings.Index(input[offset+start:], "]")
+	if start == -1 || end == -1 {
+		return "", -1
+	}
 	return input[offset+start+1 : offset+start+end], offset + start + end
 }
 
@@ -22,22 +25,24 @@ func parseCardMentions(input string) ([]string, int) {
 	count := 0
 	start_count := strings.Count(input, "[")
 	end_count := strings.Count(input, "]")
-
 	if start_count <= end_count {
 		count = start_count
 	} else {
 		count = end_count
 	}
-
-	names := make([]string, count)
-
+	names := make([]string, 0, count)
 	offset := 0
 	for i := 0; i < count; i++ {
 		var name string
 		name, offset = parseBrackets(input, offset)
-		names[i] = name
+		if offset == -1 {
+			break
+		}
+		if name != "" {
+			names = append(names, name)
+		}
 	}
-	return names, count
+	return names, len(names)
 }
 
 const (
@@ -116,8 +121,15 @@ func main() {
 			if strings.ContainsAny(ev.Msg.Text, "[]") {
 				names, count := parseCardMentions(ev.Msg.Text)
 				params.Attachments = make([]slack.Attachment, 0, count)
+			OUTER:
 				for _, name := range names {
 					card, err := bot.LoadCardByName(name)
+					for _, a := range params.Attachments {
+						if a.Title == card.Name {
+							count--
+							continue OUTER
+						}
+					}
 					if err == nil {
 						params.Attachments = append(params.Attachments, slack.Attachment{
 							Title:      card.Name,
@@ -127,13 +139,13 @@ func main() {
 							MarkdownIn: []string{"text"},
 						})
 					} else if err != sql.ErrNoRows {
-						api.PostMessage(ev.Msg.Channel, fmt.Sprintf(ERROR_REPORT, "mentioned ["+name+"]", err.Error()), params)
+						api.PostMessage(ev.Msg.Channel, fmt.Sprintf(ERROR_REPORT, "["+name+"]", err.Error()), params)
 					}
 				}
 				msg := ALL_MENTIONED
 				if len(params.Attachments) == 0 {
 					msg = NONE_MENTIONED
-				} else if count != len(params.Attachments) {
+				} else if len(params.Attachments) < count {
 					msg = SOME_MENTIONED
 				}
 				api.PostMessage(ev.Msg.Channel, msg, params)
