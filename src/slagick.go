@@ -12,13 +12,14 @@ import (
 	"time"
 )
 
-func parseBrackets(input string, offset int) (string, int) {
-	start := strings.Index(input[offset:], "[")
-	end := strings.Index(input[offset+start:], "]")
+func parseBrackets(s string, offset int) (string, int) {
+	start := strings.Index(s[offset:], "[")
+	end := strings.Index(s[offset+start:], "]")
 	if start == -1 || end == -1 {
 		return "", -1
 	}
-	return input[offset+start+1 : offset+start+end], offset + start + end
+	s = strings.Replace(s[offset+start+1:offset+start+end], "[", "", -1)
+	return s, offset + start + end
 }
 
 func parseCardMentions(input string) ([]string, int) {
