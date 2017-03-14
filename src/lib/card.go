@@ -58,7 +58,7 @@ func (c CardS) filterToughness(input string) string {
 
 func (c CardS) filterSlackEmojiInternal(input string) string {
 	if input == "{100}" {
-		return ":mtg100_1::mtg100_2:"
+		return ":mtg1h1::mtg1h2:"
 	}
 
 	if input == "{1000000}" {
@@ -74,7 +74,7 @@ func (c CardS) filterSlackEmojiInternal(input string) string {
 }
 
 func (c CardS) filterSlackEmoji(input string) string {
-	re := regexp.MustCompile("(?i){([0-9BGRUWCXYZPSTEHROA\xE2\x88\x9E\xC2\xBD]+(/[BGRUWP]+)?)}")
+	re := regexp.MustCompile("(?i){([^}]+)}")
 	return re.ReplaceAllStringFunc(input, c.filterSlackEmojiInternal)
 }
 
