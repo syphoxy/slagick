@@ -143,18 +143,18 @@ func main() {
 								ImageURL:   card.GathererCardImageURL(),
 								MarkdownIn: []string{"text"},
 							})
-						} else if err != sql.ErrNoRows {
+						} else if err == sql.ErrNoRows {
+							count--
+						} else {
 							api.PostMessage(ev.Msg.Channel, fmt.Sprintf(ERROR_REPORT, "["+name+"]", err.Error()), params)
 						}
 					}
-					msg := ""
+					msg := NONE_MENTIONED
 					if count > 0 {
 						if len(params.Attachments) == count {
 							msg = ALL_MENTIONED
 						} else if len(params.Attachments) < count {
 							msg = SOME_MENTIONED
-						} else {
-							msg = NONE_MENTIONED
 						}
 					}
 					api.PostMessage(ev.Msg.Channel, msg, params)
