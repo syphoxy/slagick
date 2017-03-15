@@ -12,53 +12,6 @@ import (
 	"time"
 )
 
-func parseBrackets(s string, offset int) (string, int) {
-	start := strings.Index(s[offset:], "[")
-	end := strings.Index(s[offset+start:], "]")
-	if start == -1 || end == -1 {
-		return "", -1
-	}
-	s = strings.Replace(s[offset+start+1:offset+start+end], "[", "", -1)
-	return s, offset + start + end
-}
-
-func parseCardMentions(input string) []string {
-	count := 0
-	start_count := strings.Count(input, "[")
-	end_count := strings.Count(input, "]")
-	if start_count <= end_count {
-		count = start_count
-	} else {
-		count = end_count
-	}
-	names := make([]string, 0, count)
-	offset := 0
-	for i := 0; i < count; i++ {
-		var name string
-		name, offset = parseBrackets(input, offset)
-		if offset == -1 {
-			break
-		}
-		if name != "" {
-			names = append(names, name)
-		}
-	}
-	return names
-}
-
-const (
-	SHOE_ME_EASTER_EGG = "Here you go! :athletic_shoe:"
-	NOT_FOUND          = "Sorry, I can't find that card. :disappointed:"
-	FOUND_FUZZY        = "Sorry, I can't find that card. Is this what you were looking for? :information_desk_person:"
-	UNKNOWN_ERROR      = "An unknown error occured. I've notified my administrator. :cry:"
-	ERROR_REPORT       = "I tried satisfying _'%s'_ but I received this error: ```\n%s\n```"
-	ALL_MENTIONED      = "These cards were mentioned. :information_desk_person:"
-	SOME_MENTIONED     = "I found some of the cards mentioned. :sweat:"
-	NONE_MENTIONED     = "I found none of the cards mentioned. :disappointed:"
-	AUTHORIZED_TADA    = "You have been authorized! :tada:"
-	CHECK_BOT_OUTPUT   = "Please check bot's output for the next step. :page_with_curl: :eyes:"
-)
-
 func main() {
 	db, err := sql.Open("postgres", os.Getenv("SLAGICK_DB_CONFIG"))
 	if err != nil {
@@ -93,20 +46,20 @@ func main() {
 			if (strings.HasPrefix(fullCommand, "show me") || strings.HasPrefix(fullCommand, "shoe me")) && len(commandArgs) > 2 {
 				msg := ""
 				if strings.HasPrefix(fullCommand, "shoe me") {
-					msg = SHOE_ME_EASTER_EGG
+					msg = slagick.SHOE_ME_EASTER_EGG
 				}
 				name := strings.Join(commandArgs[2:], " ")
 				card, err := bot.LoadCardByName(name)
 				if err != nil {
 					if err == sql.ErrNoRows {
-						msg = NOT_FOUND
+						msg = slagick.NOT_FOUND
 					} else {
-						api.PostMessage(bot.Admin, fmt.Sprintf(ERROR_REPORT, fullCommand, err.Error()), params)
-						msg = UNKNOWN_ERROR
+						api.PostMessage(bot.Admin, fmt.Sprintf(slagick.ERROR_REPORT, fullCommand, err.Error()), params)
+						msg = slagick.UNKNOWN_ERROR
 					}
 				} else {
 					if strings.ToLower(card.Name) != strings.ToLower(name) {
-						msg = FOUND_FUZZY
+						msg = slagick.FOUND_FUZZY
 					}
 					params.Attachments = []slack.Attachment{
 						slack.Attachment{
@@ -122,7 +75,7 @@ func main() {
 			}
 
 			if strings.ContainsAny(ev.Msg.Text, "[]") {
-				names := parseCardMentions(ev.Msg.Text)
+				names := slagick.ParseCardMentions(ev.Msg.Text)
 				count := len(names)
 				if count > 0 {
 					params.Attachments = make([]slack.Attachment, 0, count)
@@ -146,15 +99,15 @@ func main() {
 						} else if err == sql.ErrNoRows {
 							count--
 						} else {
-							api.PostMessage(ev.Msg.Channel, fmt.Sprintf(ERROR_REPORT, "["+name+"]", err.Error()), params)
+							api.PostMessage(ev.Msg.Channel, fmt.Sprintf(slagick.ERROR_REPORT, "["+name+"]", err.Error()), params)
 						}
 					}
-					msg := NONE_MENTIONED
+					msg := slagick.NONE_MENTIONED
 					if count > 0 {
 						if len(params.Attachments) == count {
-							msg = ALL_MENTIONED
+							msg = slagick.ALL_MENTIONED
 						} else if len(params.Attachments) < count {
-							msg = SOME_MENTIONED
+							msg = slagick.SOME_MENTIONED
 						}
 					}
 					api.PostMessage(ev.Msg.Channel, msg, params)
@@ -173,8 +126,8 @@ func main() {
 				}
 				err := bot.UpdateDB(ignore)
 				if err != nil {
-					api.PostMessage(bot.Admin, fmt.Sprintf(ERROR_REPORT, fullCommand, err.Error()), params)
-					msg = UNKNOWN_ERROR
+					api.PostMessage(bot.Admin, fmt.Sprintf(slagick.ERROR_REPORT, fullCommand, err.Error()), params)
+					msg = slagick.UNKNOWN_ERROR
 				}
 				api.PostMessage(ev.Msg.Channel, msg, params)
 			}
@@ -183,11 +136,11 @@ func main() {
 				if bot.AuthToken == "" && strings.HasPrefix(fullCommand, "slagick authorize me") {
 					bot.AuthToken = bot.GenerateAuthToken()
 					log.Println("Please use the command: slagick authorize my token " + bot.AuthToken)
-					api.PostMessage(ev.Msg.Channel, CHECK_BOT_OUTPUT, params)
+					api.PostMessage(ev.Msg.Channel, slagick.CHECK_BOT_OUTPUT, params)
 				}
 				if bot.AuthToken != "" && strings.HasPrefix(fullCommand, "slagick authorize my token") && len(commandArgs) > 4 && bot.AuthToken == commandArgs[4] {
 					bot.Admin = ev.User
-					api.PostMessage(ev.Msg.Channel, AUTHORIZED_TADA, params)
+					api.PostMessage(ev.Msg.Channel, slagick.AUTHORIZED_TADA, params)
 				}
 			}
 
