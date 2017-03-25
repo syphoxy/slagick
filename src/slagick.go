@@ -1,19 +1,32 @@
 package main
 
 import (
-	slagick "./lib"
 	"database/sql"
 	"fmt"
-	_ "github.com/lib/pq"
-	"github.com/nlopes/slack"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
+
+	slagick "./lib"
+	_ "github.com/lib/pq"
+	"github.com/nlopes/slack"
 )
 
 func main() {
-	db, err := sql.Open("postgres", os.Getenv("SLAGICK_DB_CONFIG"))
+	dbconfig := os.Getenv("SLAGICK_DB_CONFIG")
+	token := os.Getenv("SLAGICK_API_TOKEN")
+
+	if dbconfig == "" {
+		log.Fatal("SLAGICK_DB_CONFIG not set")
+	}
+
+	if token == "" {
+		log.Fatal("SLAGICK_API_TOKEN not set")
+	}
+
+	db, err := sql.Open("postgres", dbconfig)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -25,7 +38,15 @@ func main() {
 		DB: db,
 	}
 
-	api := slack.New(os.Getenv("SLAGICK_API_TOKEN"))
+	api := slack.New(token)
+
+	debug, err := strconv.ParseBool(os.Getenv("SLAGICK_DEBUG"))
+	if err == nil && debug {
+		logger := log.New(os.Stdout, "slack-bot: ", log.Lshortfile|log.LstdFlags)
+		slack.SetLogger(logger)
+		api.SetDebug(debug)
+	}
+
 	rtm := api.NewRTM()
 	go rtm.ManageConnection()
 

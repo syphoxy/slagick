@@ -7,7 +7,10 @@ services:
     environment:
     - SLAGICK_API_TOKEN
     - SLAGICK_DB_CONFIG
+    - SLAGICK_DEBUG=false
     links:
     - db
+    restart: always
   db:
     image: postgres:9.6-alpine
+    restart: always
