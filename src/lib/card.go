@@ -97,7 +97,7 @@ func (c CardS) RenderSlackMsg() string {
 	}
 
 	if c.ManaCost != "" {
-		msg += ", " + c.filterSlackEmoji(c.ManaCost) + " (" + c.filterCmc(c.Cmc) + ")"
+		msg += " " + c.filterSlackEmoji(c.ManaCost)
 	}
 
 	msg += "\n"

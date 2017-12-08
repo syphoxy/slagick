@@ -11,4 +11,7 @@ const (
 	NONE_MENTIONED     = "I found none of the cards mentioned. :disappointed:"
 	AUTHORIZED_TADA    = "You have been authorized! :tada:"
 	CHECK_BOT_OUTPUT   = "Please check bot's output for the next step. :page_with_curl: :eyes:"
+
+	COMMAND_SHOW_ME = "show me"
+	COMMAND_SHOE_ME = "shoe me"
 )

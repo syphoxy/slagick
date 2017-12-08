@@ -10,6 +10,7 @@ import (
 	"time"
 
 	slagick "./lib"
+
 	_ "github.com/lib/pq"
 	"github.com/nlopes/slack"
 )
@@ -47,6 +48,11 @@ func main() {
 		api.SetDebug(debug)
 	}
 
+	params := slack.PostMessageParameters{
+		Username:  "Slagick",
+		IconEmoji: ":flower_playing_cards:",
+	}
+
 	rtm := api.NewRTM()
 	go rtm.ManageConnection()
 
@@ -59,14 +65,10 @@ func main() {
 
 			fullCommand := strings.ToLower(ev.Msg.Text)
 			commandArgs := strings.Fields(ev.Msg.Text)
-			params := slack.PostMessageParameters{
-				Username:  "Slagick",
-				IconEmoji: ":flower_playing_cards:",
-			}
+			if (strings.HasPrefix(fullCommand, slagick.COMMAND_SHOW_ME) || strings.HasPrefix(fullCommand, slagick.COMMAND_SHOE_ME)) && len(commandArgs) > 2 {
+				var msg string
 
-			if (strings.HasPrefix(fullCommand, "show me") || strings.HasPrefix(fullCommand, "shoe me")) && len(commandArgs) > 2 {
-				msg := ""
-				if strings.HasPrefix(fullCommand, "shoe me") {
+				if strings.HasPrefix(fullCommand, slagick.COMMAND_SHOE_ME) {
 					msg = slagick.SHOE_ME_EASTER_EGG
 				}
 				name := strings.Join(commandArgs[2:], " ")
