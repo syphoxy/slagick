@@ -172,3 +172,30 @@ func (b Bot) LoadCardByName(name string) (CardS, error) {
 
 	return card, nil
 }
+
+func (b Bot) LoadCardRandom() (CardS, error) {
+	query := "SELECT name, mana_cost, cmc, type, text, flavor, power, toughness, number, multiverseid"
+	query += " FROM cards"
+	query += " WHERE multiverseid != 0"
+	query += " ORDER BY RANDOM()"
+	query += " LIMIT 1"
+
+	var card CardS
+	err := b.DB.QueryRow(query).Scan(
+		&card.Name,
+		&card.ManaCost,
+		&card.Cmc,
+		&card.Type,
+		&card.Text,
+		&card.Flavor,
+		&card.Power,
+		&card.Toughness,
+		&card.Number,
+		&card.MultiverseID)
+
+	if err != nil {
+		return card, err
+	}
+
+	return card, nil
+}

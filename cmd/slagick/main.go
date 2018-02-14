@@ -9,10 +9,11 @@ import (
 	"strings"
 	"time"
 
-	slagick "./lib"
-
+	"github.com/leekchan/accounting"
 	_ "github.com/lib/pq"
+	"github.com/miguelmota/go-coinmarketcap"
 	"github.com/nlopes/slack"
+	"github.com/syphoxy/slagick"
 )
 
 func main() {
@@ -48,11 +49,6 @@ func main() {
 		api.SetDebug(debug)
 	}
 
-	params := slack.PostMessageParameters{
-		Username:  "Slagick",
-		IconEmoji: ":flower_playing_cards:",
-	}
-
 	rtm := api.NewRTM()
 	go rtm.ManageConnection()
 
@@ -60,29 +56,32 @@ func main() {
 		switch ev := msg.Data.(type) {
 		case *slack.MessageEvent:
 			if ev.User == "" {
-				continue
+				break
 			}
 
-			fullCommand := strings.ToLower(ev.Msg.Text)
-			commandArgs := strings.Fields(ev.Msg.Text)
-			if (strings.HasPrefix(fullCommand, slagick.COMMAND_SHOW_ME) || strings.HasPrefix(fullCommand, slagick.COMMAND_SHOE_ME)) && len(commandArgs) > 2 {
-				var msg string
+			args := strings.Fields(ev.Msg.Text)
+			argc := len(args)
+			cmd := strings.ToLower(strings.Join(args, " "))
 
-				if strings.HasPrefix(fullCommand, slagick.COMMAND_SHOE_ME) {
-					msg = slagick.SHOE_ME_EASTER_EGG
+			params := slack.PostMessageParameters{
+				Username:  "Slagick",
+				IconEmoji: ":flower_playing_cards:",
+			}
+
+			if strings.HasPrefix(cmd, slagick.CmdShow) || strings.HasPrefix(cmd, slagick.CmdShoe) {
+				if argc <= 2 {
+					break
 				}
-				name := strings.Join(commandArgs[2:], " ")
-				card, err := bot.LoadCardByName(name)
-				if err != nil {
-					if err == sql.ErrNoRows {
-						msg = slagick.NOT_FOUND
-					} else {
-						api.PostMessage(bot.Admin, fmt.Sprintf(slagick.ERROR_REPORT, fullCommand, err.Error()), params)
-						msg = slagick.UNKNOWN_ERROR
-					}
-				} else {
+
+				msg := ""
+				if strings.HasPrefix(cmd, slagick.CmdShoe) {
+					msg = slagick.RespShoeMeEasterEgg
+				}
+
+				name := strings.Join(args[2:], " ")
+				if card, err := bot.LoadCardByName(name); err == nil {
 					if strings.ToLower(card.Name) != strings.ToLower(name) {
-						msg = slagick.FOUND_FUZZY
+						msg = slagick.RespFoundFuzzy
 					}
 					params.Attachments = []slack.Attachment{
 						slack.Attachment{
@@ -93,8 +92,42 @@ func main() {
 							MarkdownIn: []string{"text"},
 						},
 					}
+					api.PostMessage(ev.Msg.Channel, msg, params)
+				} else {
+					if err == sql.ErrNoRows {
+						msg = slagick.RespNotFound
+					} else {
+						api.PostMessage(bot.Admin, fmt.Sprintf(slagick.RespErrorReport, cmd, err.Error()), params)
+						msg = slagick.RespUnknownError
+					}
+				}
+			}
+
+			if strings.HasPrefix(cmd, ".update") {
+				ignore := false
+				msg := "Updated!"
+				if strings.HasPrefix(cmd, ".update ignore cache") && ev.User == bot.Admin {
+					ignore = true
+					msg = "Updated! (ignored cache)"
+				}
+				err := bot.UpdateDB(ignore)
+				if err != nil {
+					api.PostMessage(bot.Admin, fmt.Sprintf(slagick.RespErrorReport, cmd, err.Error()), params)
+					msg = slagick.RespUnknownError
 				}
 				api.PostMessage(ev.Msg.Channel, msg, params)
+			}
+
+			if bot.Admin == "" {
+				if bot.AuthToken == "" && strings.HasPrefix(cmd, ".authorize me") {
+					bot.AuthToken = bot.GenerateAuthToken()
+					log.Println("Please use the command: #mtg .authorize my token " + bot.AuthToken)
+					api.PostMessage(ev.Msg.Channel, slagick.RespCheckBotOutput, params)
+				}
+				if bot.AuthToken != "" && strings.HasPrefix(cmd, ".authorize my token") && len(args) > 4 && bot.AuthToken == args[4] {
+					bot.Admin = ev.User
+					api.PostMessage(ev.Msg.Channel, slagick.RespAuthorizedTada, params)
+				}
 			}
 
 			if strings.ContainsAny(ev.Msg.Text, "[]") {
@@ -122,48 +155,18 @@ func main() {
 						} else if err == sql.ErrNoRows {
 							count--
 						} else {
-							api.PostMessage(ev.Msg.Channel, fmt.Sprintf(slagick.ERROR_REPORT, "["+name+"]", err.Error()), params)
+							api.PostMessage(ev.Msg.Channel, fmt.Sprintf(slagick.RespErrorReport, "["+name+"]", err.Error()), params)
 						}
 					}
-					msg := slagick.NONE_MENTIONED
+					msg := slagick.RespNoneMentioned
 					if count > 0 {
 						if len(params.Attachments) == count {
-							msg = slagick.ALL_MENTIONED
+							msg = slagick.RespAllMentioned
 						} else if len(params.Attachments) < count {
-							msg = slagick.SOME_MENTIONED
+							msg = slagick.RespSomeMentioned
 						}
 					}
 					api.PostMessage(ev.Msg.Channel, msg, params)
-				}
-			}
-
-			if strings.HasPrefix(fullCommand, "slagick ping") {
-				api.PostMessage(ev.Msg.Channel, "pong", params)
-			}
-
-			if strings.HasPrefix(fullCommand, "slagick update") {
-				ignore := false
-				msg := "Updated!"
-				if strings.HasPrefix(fullCommand, "slagick update ignore cache") && ev.User == bot.Admin {
-					ignore = true
-				}
-				err := bot.UpdateDB(ignore)
-				if err != nil {
-					api.PostMessage(bot.Admin, fmt.Sprintf(slagick.ERROR_REPORT, fullCommand, err.Error()), params)
-					msg = slagick.UNKNOWN_ERROR
-				}
-				api.PostMessage(ev.Msg.Channel, msg, params)
-			}
-
-			if bot.Admin == "" {
-				if bot.AuthToken == "" && strings.HasPrefix(fullCommand, "slagick authorize me") {
-					bot.AuthToken = bot.GenerateAuthToken()
-					log.Println("Please use the command: slagick authorize my token " + bot.AuthToken)
-					api.PostMessage(ev.Msg.Channel, slagick.CHECK_BOT_OUTPUT, params)
-				}
-				if bot.AuthToken != "" && strings.HasPrefix(fullCommand, "slagick authorize my token") && len(commandArgs) > 4 && bot.AuthToken == commandArgs[4] {
-					bot.Admin = ev.User
-					api.PostMessage(ev.Msg.Channel, slagick.AUTHORIZED_TADA, params)
 				}
 			}
 
